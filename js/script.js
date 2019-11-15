@@ -18,11 +18,6 @@ $(function() {
 		// Allow only one parse at a time
 		$(this).prop('disabled', true);
 
-        if (!$('#file')[0].files.length) {
-            alert('Please choose at least one file to parse.');
-            return enableButton();
-        }
-        
         $('#file').parse({
             config: {
                 complete: completeFn,
