@@ -11,12 +11,12 @@ $(function() {
 			return;
         }
 
+		// Allow only one parse at a time
+		$(this).prop('disabled', true);
+
 		rowCount = 0;
 		errorCount = 0;
 		firstError = undefined;
-
-		// Allow only one parse at a time
-		$(this).prop('disabled', true);
 
         $('#file').parse({
             config: {
