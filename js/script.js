@@ -50,7 +50,7 @@ function completeFn(results) {
 		}
 		if (results.data && results.data.length > 0) {
 			rowCount = results.data.length;
-            reformat(results);
+            addShippingCostsColumn(results);
         }
 	}
 
@@ -61,11 +61,96 @@ function completeFn(results) {
 	setTimeout(enableButton, 100);
 }
 
-function reformat(results) {
+function addShippingCostsColumn(results) {
+    // Add new column header
     results.data[0].push('shipping_costs');
 
+    var orderID = null;
+    var orderItems = [];
+
+    // For every line in the CSV file
     for (var i=1; i<results.data.length-1; i++) {
-        results.data[i].push(0);
+        var currentItem = results.data[i];
+
+        // Collect lines with the same Order_id
+        if (currentItem[0] === orderID) {
+            orderItems.push(currentItem);
+        }
+        else {
+            calculateShippingCosts(orderItems);
+            orderID = currentItem[0];
+            orderItems = [currentItem];
+        }
+    }
+
+    // Make sure we process the last orderItems
+    calculateShippingCosts(orderItems);
+}
+
+function calculateShippingCosts(orderItems) {
+    if (!orderItems.length) {
+        return;
+    }
+
+    var envelopeCost = '0,37';
+    var boxCost = '0,59';
+
+    var bookCount = 0;
+    var wrapCount = 0;
+
+    // Group items by type (book or wrap)
+    for (var i=0; i<orderItems.length; i++) {
+        var item = orderItems[i];
+        var sku = item[3].toLowerCase();
+        var quantity = parseInt(item[4]);
+
+        if (sku.startsWith('hooraystudios-') || sku.startsWith('hurrahelden-')) {
+            bookCount += quantity;
+        }
+        else if (sku.startsWith('hh:')) {
+            wrapCount += quantity;
+        }
+    }
+
+    // Wrap only: hard abort
+    // TODO: check with customer
+    if (!bookCount) {
+        return;
+    }
+
+    // Books only
+    else if (!wrapCount) {
+        var envelopeCount = 0;
+        var boxCount = Math.floor(bookCount / 8);
+        var modulo = bookCount % 8;
+
+        if (modulo > 3) {
+            boxCount += 1;
+        }
+        else if (modulo > 0) {
+            envelopeCount = 1;
+        }
+
+        for (var i=0; i<orderItems.length; i++) {
+            var item = orderItems[i];
+            var shippingCosts = '0';
+
+            if (boxCount > 0) {
+                shippingCosts = boxCost;
+                boxCount--;
+            }
+            else if (envelopeCount > 0) {
+                shippingCosts = envelopeCost;
+                envelopeCount--;
+            }
+
+            item.push(shippingCosts);
+        }
+    }
+
+    // A combination of books and wraps
+    else {
+        // TODO
     }
 }
 
