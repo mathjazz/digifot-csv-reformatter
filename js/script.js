@@ -92,27 +92,15 @@ function calculateShippingCosts(orderItems) {
         return;
     }
 
+    var counts = getItemTypeCounts(orderItems);
+
+    var bookCount = counts.books;
+    var wrapCount = counts.wraps;
+
     var envelopeCost = '0,37';
     var boxCost = '0,59';
 
-    var bookCount = 0;
-    var wrapCount = 0;
-
-    // Group items by type (book or wrap)
-    for (var i=0; i<orderItems.length; i++) {
-        var item = orderItems[i];
-        var sku = item[3].toLowerCase();
-        var quantity = parseInt(item[4]);
-
-        if (sku.startsWith('hooraystudios-') || sku.startsWith('hurrahelden-')) {
-            bookCount += quantity;
-        }
-        else if (sku.startsWith('hh:')) {
-            wrapCount += quantity;
-        }
-    }
-
-    // Wrap only: hard abort
+    // Wraps only: hard abort
     // TODO: check with customer
     if (!bookCount) {
         return;
@@ -151,6 +139,29 @@ function calculateShippingCosts(orderItems) {
     // A combination of books and wraps
     else {
         // TODO
+    }
+}
+
+function getItemTypeCounts(orderItems) {
+    var bookCount = 0;
+    var wrapCount = 0;
+
+    for (var i=0; i<orderItems.length; i++) {
+        var item = orderItems[i];
+        var sku = item[3].toLowerCase();
+        var quantity = parseInt(item[4]);
+
+        if (sku.startsWith('hooraystudios-') || sku.startsWith('hurrahelden-')) {
+            bookCount += quantity;
+        }
+        else if (sku.startsWith('hh:')) {
+            wrapCount += quantity;
+        }
+    }
+
+    return {
+        books: bookCount,
+        wraps: wrapCount,
     }
 }
 
