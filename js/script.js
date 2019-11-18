@@ -54,8 +54,6 @@ function completeFn(results) {
         }
 	}
 
-    print(results);
-
     download(results);
 
 	setTimeout(enableButton, 100);
@@ -77,28 +75,24 @@ function addShippingCostsColumn(results) {
             orderItems.push(currentItem);
         }
         else {
-            calculateShippingCosts(orderItems);
+            processOrder(orderItems);
             orderID = currentItem[0];
             orderItems = [currentItem];
         }
     }
 
     // Make sure we process the last orderItems
-    calculateShippingCosts(orderItems);
+    processOrder(orderItems);
 }
 
-function calculateShippingCosts(orderItems) {
+function processOrder(orderItems) {
     if (!orderItems.length) {
         return;
     }
 
-    var counts = getItemTypeCounts(orderItems);
-
+    var counts = getOrderItemTypeCounts(orderItems);
     var bookCount = counts.books;
     var wrapCount = counts.wraps;
-
-    var envelopeCost = '0,37';
-    var boxCost = '0,59';
 
     // Wraps only: hard abort
     // TODO: check with customer
@@ -109,52 +103,69 @@ function calculateShippingCosts(orderItems) {
     // Books only
     else if (!wrapCount) {
         var envelopeCount = 0;
+
+        // Split books into groups of 8 books and the remaining group
         var boxCount = Math.floor(bookCount / 8);
         var modulo = bookCount % 8;
 
+        // Use 1 box for every group of 4-8 books
         if (modulo > 3) {
             boxCount += 1;
         }
+        // Use 1 envelope for every group of 1-3 books
         else if (modulo > 0) {
             envelopeCount = 1;
         }
 
-        for (var i=0; i<orderItems.length; i++) {
-            var item = orderItems[i];
-            var shippingCosts = '0';
-
-            if (boxCount > 0) {
-                shippingCosts = boxCost;
-                boxCount--;
-            }
-            else if (envelopeCount > 0) {
-                shippingCosts = envelopeCost;
-                envelopeCount--;
-            }
-
-            item.push(shippingCosts);
-        }
+        calculateShippingCost(orderItems, boxCount, envelopeCount);
     }
 
     // A combination of books and wraps
     else {
-        // TODO
+        var boxCount = Math.ceil(wrapCount / 2);
+        var modulo = wrapCount % 2;
+
+        // TODO: floor or ceil? where do we put 5 books + 3 boxes?
+        var remainingBookCount = bookCount - Math.floor(wrapCount * 1.5);
+        if (modulo === 1) {
+            remainingBookCount = bookCount - Math.floor(wrapCount * 1.5) - 4;
+        }
+
+        // Add aditional envelopes and/or boxes for books that don't fit into wraps' boxes
+        if (remainingBookCount > 0) {
+            var envelopeCount = 0;
+
+            // Split books into groups of 8 books and the remaining group
+            boxCount += Math.floor(bookCount / 8);
+            modulo = bookCount % 8;
+
+            // Use 1 box for every group of 4-8 books
+            if (modulo > 3) {
+                boxCount += 1;
+            }
+            // Use 1 envelope for every group of 1-3 books
+            else if (modulo > 0) {
+                envelopeCount = 1;
+            }
+
+        }
+
+        calculateShippingCost(orderItems, boxCount, envelopeCount);
     }
 }
 
-function getItemTypeCounts(orderItems) {
+function getOrderItemTypeCounts(orderItems) {
     var bookCount = 0;
     var wrapCount = 0;
 
     for (var i=0; i<orderItems.length; i++) {
         var item = orderItems[i];
-        var sku = item[3].toLowerCase();
         var quantity = parseInt(item[4]);
 
-        if (sku.startsWith('hooraystudios-') || sku.startsWith('hurrahelden-')) {
+        if (isBookType(item)) {
             bookCount += quantity;
         }
-        else if (sku.startsWith('hh:')) {
+        else {
             wrapCount += quantity;
         }
     }
@@ -165,18 +176,40 @@ function getItemTypeCounts(orderItems) {
     }
 }
 
-function print(results) {
-	console.log('Parse complete');
+function isBookType(item) {
+    var sku = item[3].toLowerCase();
 
-	console.log('       Time:', (end - start || '(Unknown; your browser does not support the Performance API)'), 'ms');
-	console.log('  Row count:', rowCount);
-	console.log('     Errors:', errorCount);
-
-	if (errorCount) {
-		console.log('First error:', firstError);
+    if (sku.startsWith('hooraystudios-') || sku.startsWith('hurrahelden-')) {
+        return true;
     }
 
-	console.log('    Results:', results);
+    return false;
+}
+
+function calculateShippingCost(orderItems, boxCount, envelopeCount) {
+    var envelopeCost = '0,37';
+    var boxCost = '0,59';
+
+    for (var i=0; i<orderItems.length; i++) {
+        var item = orderItems[i];
+        var shippingCosts = '0';
+
+        if (!isBookType(item)) {
+            item.push(shippingCosts);
+            continue;
+        }
+
+        if (boxCount > 0) {
+            shippingCosts = boxCost;
+            boxCount--;
+        }
+        else if (envelopeCount > 0) {
+            shippingCosts = envelopeCost;
+            envelopeCount--;
+        }
+
+        item.push(shippingCosts);
+    }
 }
 
 function download(results) {
