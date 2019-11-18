@@ -173,7 +173,8 @@ function calculateShippingCost(orderItems, boxCount, envelopeCount) {
         var item = orderItems[i];
         var shippingCosts = '0';
 
-        if (!isBookType(item)) {
+        // Ignore wraps and cancelled orders (empty shipped_at column)
+        if (!isBookType(item) || item[1] === '') {
             item.push(shippingCosts);
             continue;
         }
