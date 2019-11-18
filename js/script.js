@@ -95,18 +95,29 @@ function processOrder(orderItems) {
     var wrapCount = counts.wraps;
 
     // Wraps only: hard abort
-    // TODO: check with customer
+    // TODO: consult with customer
     if (!bookCount) {
         return;
     }
 
-    // Books only
-    else if (!wrapCount) {
+    var boxCount = Math.ceil(wrapCount / 2);
+    var modulo = wrapCount % 2;
+
+    // How many books fit into 1 box if we have 1 wrap?
+    // How many books fit into 2 boxes if we have 3 wraps?
+    // TODO: consult with customer
+    var remainingBookCount = bookCount - Math.floor(wrapCount * 1.5);
+    if (modulo === 1) {
+        remainingBookCount = bookCount - Math.floor(wrapCount * 1.5) - 4;
+    }
+
+    // Add aditional envelopes and/or boxes for books that don't fit into wraps' boxes
+    if (remainingBookCount > 0) {
         var envelopeCount = 0;
 
         // Split books into groups of 8 books and the remaining group
-        var boxCount = Math.floor(bookCount / 8);
-        var modulo = bookCount % 8;
+        boxCount += Math.floor(bookCount / 8);
+        modulo = bookCount % 8;
 
         // Use 1 box for every group of 4-8 books
         if (modulo > 3) {
@@ -117,41 +128,9 @@ function processOrder(orderItems) {
             envelopeCount = 1;
         }
 
-        calculateShippingCost(orderItems, boxCount, envelopeCount);
     }
 
-    // A combination of books and wraps
-    else {
-        var boxCount = Math.ceil(wrapCount / 2);
-        var modulo = wrapCount % 2;
-
-        // TODO: floor or ceil? where do we put 5 books + 3 boxes?
-        var remainingBookCount = bookCount - Math.floor(wrapCount * 1.5);
-        if (modulo === 1) {
-            remainingBookCount = bookCount - Math.floor(wrapCount * 1.5) - 4;
-        }
-
-        // Add aditional envelopes and/or boxes for books that don't fit into wraps' boxes
-        if (remainingBookCount > 0) {
-            var envelopeCount = 0;
-
-            // Split books into groups of 8 books and the remaining group
-            boxCount += Math.floor(bookCount / 8);
-            modulo = bookCount % 8;
-
-            // Use 1 box for every group of 4-8 books
-            if (modulo > 3) {
-                boxCount += 1;
-            }
-            // Use 1 envelope for every group of 1-3 books
-            else if (modulo > 0) {
-                envelopeCount = 1;
-            }
-
-        }
-
-        calculateShippingCost(orderItems, boxCount, envelopeCount);
-    }
+    calculateShippingCost(orderItems, boxCount, envelopeCount);
 }
 
 function getOrderItemTypeCounts(orderItems) {
