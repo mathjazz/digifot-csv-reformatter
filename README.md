@@ -3,6 +3,10 @@
 A simple client-side web app that lets user upload a CSV file,
 reformats it according to provided algorithm and serves it for download
 
+## Production Server
+
+https://mathjazz.github.io/digifot-csv-reformatter/
+
 ## License
 
 This software is licensed under the
